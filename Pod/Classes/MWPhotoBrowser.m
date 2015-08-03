@@ -67,6 +67,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _displayActionButton = YES;
     _displayNavArrows = NO;
     _zoomPhotosToFill = YES;
+    _hideControlsWhenDragging = YES;
     _performingLayout = NO; // Reset on view did appear
     _rotating = NO;
     _viewIsActive = NO;
@@ -1060,8 +1061,9 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 }
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
-	// Hide controls when dragging begins
-	[self setControlsHidden:YES animated:YES permanent:NO];
+    if (_hideControlsWhenDragging) {
+        [self setControlsHidden:YES animated:YES permanent:NO];
+    }
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
