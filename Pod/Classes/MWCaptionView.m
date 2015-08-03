@@ -15,6 +15,7 @@ static const CGFloat labelPadding = 10;
 // Private
 @interface MWCaptionView () {
     id <MWPhoto> _photo;
+    UIToolbar *_contentView;
     UILabel *_label;    
 }
 @end
@@ -26,11 +27,6 @@ static const CGFloat labelPadding = 10;
     if (self) {
         self.userInteractionEnabled = NO;
         _photo = photo;
-        self.barStyle = UIBarStyleBlackTranslucent;
-        self.tintColor = nil;
-        self.barTintColor = nil;
-        self.barStyle = UIBarStyleBlackTranslucent;
-        [self setBackgroundImage:nil forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;
         [self setupCaption];
     }
@@ -48,23 +44,58 @@ static const CGFloat labelPadding = 10;
 }
 
 - (void)setupCaption {
+    _contentView = [[UIToolbar alloc] initWithFrame:self.bounds];
+    _contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
+    if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"7")) {
+        // Use iOS 7 blurry goodness
+        _contentView.barStyle = UIBarStyleBlackTranslucent;
+        _contentView.tintColor = nil;
+        _contentView.barTintColor = nil;
+        _contentView.barStyle = UIBarStyleBlackTranslucent;
+        [_contentView setBackgroundImage:nil forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+        self.layer.allowsGroupOpacity = NO;
+    } else {
+        // Transparent black with no gloss
+        CGRect rect = CGRectMake(0.0f, 0.0f, 1.0f, 1.0f);
+        UIGraphicsBeginImageContext(rect.size);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, [[UIColor colorWithWhite:0 alpha:0.6] CGColor]);
+        CGContextFillRect(context, rect);
+        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        [_contentView setBackgroundImage:image forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+    }
+    [self addSubview:_contentView];
+    
     _label = [[UILabel alloc] initWithFrame:CGRectIntegral(CGRectMake(labelPadding, 0,
-                                                       self.bounds.size.width-labelPadding*2,
-                                                       self.bounds.size.height))];
+                                                                      self.bounds.size.width-labelPadding*2,
+                                                                      self.bounds.size.height))];
     _label.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     _label.opaque = NO;
     _label.backgroundColor = [UIColor clearColor];
-    _label.textAlignment = NSTextAlignmentCenter;
-    _label.lineBreakMode = NSLineBreakByWordWrapping;
-
+    if (SYSTEM_VERSION_LESS_THAN(@"6")) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        _label.textAlignment = UITextAlignmentCenter;
+        _label.lineBreakMode = UILineBreakModeWordWrap;
+#pragma clang diagnostic pop
+    } else {
+        _label.textAlignment = NSTextAlignmentCenter;
+        _label.lineBreakMode = NSLineBreakByWordWrapping;
+    }
+    
     _label.numberOfLines = 0;
     _label.textColor = [UIColor whiteColor];
+    if (SYSTEM_VERSION_LESS_THAN(@"7")) {
+        // Shadow on 6 and below
+        _label.shadowColor = [UIColor blackColor];
+        _label.shadowOffset = CGSizeMake(1, 1);
+    }
     _label.font = [UIFont systemFontOfSize:17];
     if ([_photo respondsToSelector:@selector(caption)]) {
         _label.text = [_photo caption] ? [_photo caption] : @" ";
     }
-    [self addSubview:_label];
+    [_contentView addSubview:_label];
 }
-
 
 @end
